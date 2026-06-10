@@ -2834,7 +2834,14 @@ stable: conflict-free 且攻击集合外所有节点。</pre>
 
     graphSvg.addEventListener("click", event => {
       const group = event.target.closest(".node");
-      if (!group) return;
+      if (!group) {
+        if (state.selectedNode) {
+          state.selectedNode = null;
+          fillNodeForm(null);
+          renderAll();
+        }
+        return;
+      }
       const node = getNode(group.dataset.id);
       if (!node) return;
       state.selectedNode = node.id;
@@ -2854,7 +2861,14 @@ stable: conflict-free 且攻击集合外所有节点。</pre>
 
     dungGraphSvg.addEventListener("click", event => {
       const group = event.target.closest(".node");
-      if (!group) return;
+      if (!group) {
+        if (dungState.selectedNode) {
+          dungState.selectedNode = null;
+          fillDungNodeForm(null);
+          renderAll();
+        }
+        return;
+      }
       const node = getDungNode(group.dataset.id);
       if (!node) return;
       dungState.selectedNode = node.id;
