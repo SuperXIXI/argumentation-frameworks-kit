@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QBAF 渐进式语义模拟器</title>
+  <title>Argumentation Frameworks Kit / 论辩框架工具箱</title>
   <script src="./libs/xlsx.full.min.js"></script>
   <script src="./libs/lucide.min.js"></script>
   <style>
@@ -162,6 +162,44 @@
       align-items: center;
       min-width: 0;
       flex: 1;
+    }
+
+    .tool-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 4px;
+      flex: 0 0 auto;
+    }
+
+    .tool-tab {
+      border: 0;
+      background: transparent;
+      min-height: 30px;
+      padding: 5px 10px;
+      color: var(--muted);
+    }
+
+    .tool-tab:hover {
+      background: #fff;
+      border-color: transparent;
+    }
+
+    .tool-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: 0 1px 5px rgba(25, 42, 70, .10);
+    }
+
+    .tool-view {
+      display: none;
+    }
+
+    .tool-view.active {
+      display: grid;
     }
 
     .metric {
@@ -405,7 +443,8 @@
       background-size: 28px 28px;
     }
 
-    #graphSvg {
+    #graphSvg,
+    #dungGraphSvg {
       width: 100%;
       height: 100%;
       display: block;
@@ -588,6 +627,60 @@
       max-height: 230px;
     }
 
+    .extension-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .extension-item {
+      width: 100%;
+      justify-content: flex-start;
+      min-height: 38px;
+      border-color: var(--line);
+      background: #fff;
+      color: var(--text);
+    }
+
+    .extension-item.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .dung-node-in-extension circle.main {
+      stroke: var(--accent);
+      stroke-width: 4;
+    }
+
+    .dung-summary {
+      display: grid;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 9px 10px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .dung-summary strong {
+      color: var(--text);
+    }
+
+    .warning-box {
+      border: 1px solid rgba(183, 121, 31, .40);
+      background: #fff8e7;
+      color: #7a4d13;
+      border-radius: 8px;
+      padding: 9px 10px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .warning-box.show {
+      display: block;
+    }
+
     .file-line {
       display: grid;
       grid-template-columns: 1fr 104px;
@@ -661,11 +754,20 @@
         overflow-x: auto;
       }
 
+      .tool-tabs {
+        width: 100%;
+        overflow-x: auto;
+      }
+
       .app-shell {
         display: flex;
         flex-direction: column;
         min-height: 0;
         padding: 10px;
+      }
+
+      .tool-view.active {
+        display: flex;
       }
 
       .panel {
@@ -694,19 +796,23 @@
     <div class="brand">
       <div class="brand-mark" aria-hidden="true"></div>
       <div>
-        <h1>QBAF 渐进式语义模拟器</h1>
-        <small>支持/攻击关系下的强度迭代与收敛</small>
+        <h1>Argumentation Frameworks Kit</h1>
+        <small>论辩框架工具箱：QBAF 与 Dung AF</small>
       </div>
     </div>
+    <nav class="tool-tabs" aria-label="论辩工具切换">
+      <button class="tool-tab active" id="qbafTab" data-tool="qbaf"><i data-lucide="activity"></i>QBAF</button>
+      <button class="tool-tab" id="dungTab" data-tool="dung"><i data-lucide="network"></i>Dung AF</button>
+    </nav>
     <div class="top-metrics">
-      <div class="metric"><i data-lucide="circle-dot"></i>节点 <strong id="metricNodes">0</strong></div>
-      <div class="metric"><i data-lucide="git-branch"></i>边 <strong id="metricEdges">0</strong></div>
-      <div class="metric"><i data-lucide="repeat-2"></i>轮次 <strong id="metricIter">0</strong></div>
-      <div class="metric"><i data-lucide="activity"></i>最大 Δ <strong id="metricDelta">0.0000</strong></div>
+      <div class="metric"><i data-lucide="circle-dot"></i><span id="metricNodesLabel">节点</span> <strong id="metricNodes">0</strong></div>
+      <div class="metric"><i data-lucide="git-branch"></i><span id="metricEdgesLabel">边</span> <strong id="metricEdges">0</strong></div>
+      <div class="metric"><i data-lucide="repeat-2"></i><span id="metricIterLabel">轮次</span> <strong id="metricIter">0</strong></div>
+      <div class="metric"><i data-lucide="activity"></i><span id="metricDeltaLabel">最大 Δ</span> <strong id="metricDelta">0.0000</strong></div>
     </div>
   </header>
 
-  <main class="app-shell">
+  <main class="app-shell tool-view active" id="qbafView">
     <aside class="panel">
       <div class="panel-header">
         <h2><i data-lucide="sliders-horizontal"></i>框架编辑</h2>
@@ -890,6 +996,158 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
     </aside>
   </main>
 
+  <main class="app-shell tool-view" id="dungView">
+    <aside class="panel">
+      <div class="panel-header">
+        <h2><i data-lucide="sliders-horizontal"></i>Dung AF 编辑</h2>
+        <button class="icon" id="dungClearAllBtn" title="清空 Dung AF" aria-label="清空 Dung AF"><i data-lucide="trash-2"></i></button>
+      </div>
+      <div class="panel-body">
+        <section class="tool-section">
+          <h3 class="section-title"><i data-lucide="circle-plus"></i>论证节点</h3>
+          <label>节点 ID
+            <input id="dungNodeId" placeholder="A" autocomplete="off" />
+          </label>
+          <label style="margin-top:8px;">显示名称
+            <input id="dungNodeLabel" placeholder="论证 A" autocomplete="off" />
+          </label>
+          <div class="button-row">
+            <button class="primary" id="dungSaveNodeBtn"><i data-lucide="save"></i>保存节点</button>
+            <button id="dungResetNodeFormBtn"><i data-lucide="eraser"></i>清空表单</button>
+          </div>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>名称</th><th></th></tr>
+              </thead>
+              <tbody id="dungNodeRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <h3 class="section-title"><i data-lucide="git-pull-request-arrow"></i>攻击关系</h3>
+          <div class="grid-2">
+            <label>攻击者
+              <select id="dungAttackFrom"></select>
+            </label>
+            <label>被攻击者
+              <select id="dungAttackTo"></select>
+            </label>
+          </div>
+          <div class="button-row">
+            <button class="primary" id="dungSaveAttackBtn"><i data-lucide="plus"></i>加入攻击</button>
+          </div>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr><th>攻击</th><th></th></tr>
+              </thead>
+              <tbody id="dungAttackRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <h3 class="section-title"><i data-lucide="file-spreadsheet"></i>Excel / CSV</h3>
+          <div class="file-line">
+            <label>导入文件
+              <input id="dungFileInput" type="file" accept=".xlsx,.xls,.csv" />
+            </label>
+            <label>模式
+              <select id="dungImportMode">
+                <option value="replace">替换</option>
+                <option value="append">追加</option>
+              </select>
+            </label>
+          </div>
+          <p class="muted tiny">Excel 工作表：Nodes(id,label,x,y)，Attacks(from,to)。中文表头也可识别。</p>
+          <div class="button-row">
+            <button id="dungImportBtn"><i data-lucide="upload"></i>导入</button>
+            <button id="dungTemplateBtn"><i data-lucide="download"></i>模板</button>
+            <button id="dungExportBtn"><i data-lucide="file-down"></i>导出</button>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <section class="panel graph-panel">
+      <div class="panel-header">
+        <h2><i data-lucide="network"></i>Dung AF 图</h2>
+        <div class="graph-toolbar">
+          <button id="dungLayoutBtn"><i data-lucide="layout-template"></i>自动布局</button>
+          <button id="dungFitBtn"><i data-lucide="maximize"></i>居中</button>
+        </div>
+      </div>
+      <div class="graph-stage">
+        <svg id="dungGraphSvg" viewBox="0 0 1000 700" role="img" aria-label="Dung AF 论辩框架图">
+          <defs>
+            <marker id="dungArrowAttack" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+              <path d="M2,2 L10,6 L2,10 Z" fill="#cf3f59"></path>
+            </marker>
+          </defs>
+          <g id="dungEdgeLayer"></g>
+          <g id="dungNodeLayer"></g>
+        </svg>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch attack"></span>攻击</span>
+          <span class="legend-item">点击扩展后高亮其中节点</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel right-panel">
+      <div class="panel-header">
+        <h2><i data-lucide="list-checks"></i>经典语义</h2>
+        <button class="icon" id="dungComputeBtn" title="计算语义" aria-label="计算语义"><i data-lucide="calculator"></i></button>
+      </div>
+      <div class="panel-body">
+        <section class="tool-section">
+          <label>选择语义
+            <select id="dungSemanticSelect">
+              <option value="conflict-free">conflict-free</option>
+              <option value="admissible">admissible</option>
+              <option value="complete">complete</option>
+              <option value="grounded" selected>grounded</option>
+              <option value="preferred">preferred</option>
+              <option value="stable">stable</option>
+            </select>
+          </label>
+          <div class="button-row">
+            <button class="primary" id="dungComputeMainBtn"><i data-lucide="calculator"></i>计算语义</button>
+            <button id="dungClearSelectionBtn"><i data-lucide="scan-line"></i>清除高亮</button>
+          </div>
+          <div class="status" id="dungStatusBox">当前 Dung AF 已初始化。选择语义后点击计算。</div>
+          <div class="warning-box" id="dungWarningBox"></div>
+          <details class="formula">
+            <summary>Dung AF 判定规则</summary>
+            <pre>AF = (Arg, Att)，Att 中 (a,b) 表示 a 攻击 b。
+
+conflict-free: 集合内部没有攻击关系。
+defends(S, a): 每个攻击 a 的节点，都被 S 中某个节点攻击。
+admissible: conflict-free 且集合中每个节点都被 S 防御。
+complete: admissible 且包含所有被 S 防御的节点。
+grounded: complete 扩展中最小的扩展。
+preferred: admissible 扩展中极大的扩展。
+stable: conflict-free 且攻击集合外所有节点。</pre>
+          </details>
+        </section>
+
+        <section class="tool-section">
+          <h3 class="section-title"><i data-lucide="braces"></i>扩展列表</h3>
+          <div class="extension-list" id="dungExtensionList"></div>
+        </section>
+
+        <section class="tool-section">
+          <h3 class="section-title"><i data-lucide="info"></i>当前扩展</h3>
+          <div class="dung-summary" id="dungSummaryBox">
+            <span>尚未选择扩展。</span>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -897,6 +1155,10 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
     const graphSvg = document.getElementById("graphSvg");
     const edgeLayer = document.getElementById("edgeLayer");
     const nodeLayer = document.getElementById("nodeLayer");
+    const dungGraphSvg = document.getElementById("dungGraphSvg");
+    const dungEdgeLayer = document.getElementById("dungEdgeLayer");
+    const dungNodeLayer = document.getElementById("dungNodeLayer");
+    let activeTool = "qbaf";
 
     const state = {
       nodes: [
@@ -919,7 +1181,34 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       drag: null
     };
 
+    const dungState = {
+      nodes: [
+        { id: "A", label: "论证 A", x: 220, y: 210 },
+        { id: "B", label: "论证 B", x: 500, y: 180 },
+        { id: "C", label: "论证 C", x: 760, y: 360 },
+        { id: "D", label: "论证 D", x: 390, y: 500 }
+      ],
+      attacks: [
+        { id: makeId("da"), from: "A", to: "B" },
+        { id: makeId("da"), from: "B", to: "A" },
+        { id: makeId("da"), from: "C", to: "B" },
+        { id: makeId("da"), from: "B", to: "D" }
+      ],
+      selectedNode: "A",
+      selectedExtension: [],
+      selectedExtensionIndex: -1,
+      selectedSemantic: "grounded",
+      extensions: [],
+      computed: false,
+      warning: "",
+      drag: null
+    };
+
     const dom = {
+      qbafTab: document.getElementById("qbafTab"),
+      dungTab: document.getElementById("dungTab"),
+      qbafView: document.getElementById("qbafView"),
+      dungView: document.getElementById("dungView"),
       nodeId: document.getElementById("nodeId"),
       nodeLabel: document.getElementById("nodeLabel"),
       nodeBase: document.getElementById("nodeBase"),
@@ -953,10 +1242,39 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       historyCanvas: document.getElementById("historyCanvas"),
       historyHead: document.getElementById("historyHead"),
       historyRows: document.getElementById("historyRows"),
+      metricNodesLabel: document.getElementById("metricNodesLabel"),
+      metricEdgesLabel: document.getElementById("metricEdgesLabel"),
+      metricIterLabel: document.getElementById("metricIterLabel"),
+      metricDeltaLabel: document.getElementById("metricDeltaLabel"),
       metricNodes: document.getElementById("metricNodes"),
       metricEdges: document.getElementById("metricEdges"),
       metricIter: document.getElementById("metricIter"),
       metricDelta: document.getElementById("metricDelta"),
+      dungNodeId: document.getElementById("dungNodeId"),
+      dungNodeLabel: document.getElementById("dungNodeLabel"),
+      dungSaveNodeBtn: document.getElementById("dungSaveNodeBtn"),
+      dungResetNodeFormBtn: document.getElementById("dungResetNodeFormBtn"),
+      dungNodeRows: document.getElementById("dungNodeRows"),
+      dungAttackFrom: document.getElementById("dungAttackFrom"),
+      dungAttackTo: document.getElementById("dungAttackTo"),
+      dungSaveAttackBtn: document.getElementById("dungSaveAttackBtn"),
+      dungAttackRows: document.getElementById("dungAttackRows"),
+      dungFileInput: document.getElementById("dungFileInput"),
+      dungImportMode: document.getElementById("dungImportMode"),
+      dungImportBtn: document.getElementById("dungImportBtn"),
+      dungTemplateBtn: document.getElementById("dungTemplateBtn"),
+      dungExportBtn: document.getElementById("dungExportBtn"),
+      dungClearAllBtn: document.getElementById("dungClearAllBtn"),
+      dungLayoutBtn: document.getElementById("dungLayoutBtn"),
+      dungFitBtn: document.getElementById("dungFitBtn"),
+      dungSemanticSelect: document.getElementById("dungSemanticSelect"),
+      dungComputeBtn: document.getElementById("dungComputeBtn"),
+      dungComputeMainBtn: document.getElementById("dungComputeMainBtn"),
+      dungClearSelectionBtn: document.getElementById("dungClearSelectionBtn"),
+      dungStatusBox: document.getElementById("dungStatusBox"),
+      dungWarningBox: document.getElementById("dungWarningBox"),
+      dungExtensionList: document.getElementById("dungExtensionList"),
+      dungSummaryBox: document.getElementById("dungSummaryBox"),
       toast: document.getElementById("toast")
     };
 
@@ -1173,11 +1491,28 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       renderEdgeRows();
       renderGraph();
       renderHistory();
+      renderDungAll();
+      renderToolTabs();
       updateRunButtons();
       createIcons();
     }
 
     function renderMetrics() {
+      if (activeTool === "dung") {
+        dom.metricNodesLabel.textContent = "论证";
+        dom.metricEdgesLabel.textContent = "攻击";
+        dom.metricIterLabel.textContent = "语义";
+        dom.metricDeltaLabel.textContent = "扩展";
+        dom.metricNodes.textContent = dungState.nodes.length;
+        dom.metricEdges.textContent = dungState.attacks.length;
+        dom.metricIter.textContent = semanticLabel(dungState.selectedSemantic);
+        dom.metricDelta.textContent = dungState.extensions.length;
+        return;
+      }
+      dom.metricNodesLabel.textContent = "节点";
+      dom.metricEdgesLabel.textContent = "边";
+      dom.metricIterLabel.textContent = "轮次";
+      dom.metricDeltaLabel.textContent = "最大 Δ";
       dom.metricNodes.textContent = state.nodes.length;
       dom.metricEdges.textContent = state.edges.length;
       dom.metricIter.textContent = state.iteration;
@@ -1746,6 +2081,532 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       }
     }
 
+    function semanticLabel(value) {
+      const labels = {
+        "conflict-free": "CF",
+        admissible: "ADM",
+        complete: "COM",
+        grounded: "GRD",
+        preferred: "PRF",
+        stable: "STB"
+      };
+      return labels[value] || value;
+    }
+
+    function getDungNode(id) {
+      return dungState.nodes.find(node => node.id === id);
+    }
+
+    function setDungStatus(text) {
+      dom.dungStatusBox.innerHTML = text;
+    }
+
+    function setTool(tool) {
+      activeTool = tool;
+      state.running = false;
+      updateRunButtons();
+      renderAll();
+    }
+
+    function renderToolTabs() {
+      dom.qbafTab.classList.toggle("active", activeTool === "qbaf");
+      dom.dungTab.classList.toggle("active", activeTool === "dung");
+      dom.qbafView.classList.toggle("active", activeTool === "qbaf");
+      dom.dungView.classList.toggle("active", activeTool === "dung");
+    }
+
+    function fillDungNodeForm(node) {
+      if (!node) {
+        dom.dungNodeId.value = "";
+        dom.dungNodeLabel.value = "";
+        return;
+      }
+      dom.dungNodeId.value = node.id;
+      dom.dungNodeLabel.value = node.label || node.id;
+    }
+
+    function saveDungNode() {
+      const id = dom.dungNodeId.value.trim();
+      if (!id) {
+        showToast("Dung AF 节点 ID 不能为空。");
+        dom.dungNodeId.focus();
+        return;
+      }
+      const label = dom.dungNodeLabel.value.trim() || id;
+      const existing = getDungNode(id);
+      if (existing) {
+        existing.label = label;
+      } else {
+        const pos = nextPosition(dungState.nodes.length);
+        dungState.nodes.push({ id, label, x: pos.x, y: pos.y });
+      }
+      dungState.selectedNode = id;
+      clearDungResults();
+      renderAll();
+      showToast(existing ? "Dung AF 节点已更新。" : "Dung AF 节点已加入。");
+    }
+
+    function deleteDungNode(id) {
+      dungState.nodes = dungState.nodes.filter(node => node.id !== id);
+      dungState.attacks = dungState.attacks.filter(attack => attack.from !== id && attack.to !== id);
+      if (dungState.selectedNode === id) dungState.selectedNode = dungState.nodes[0]?.id || null;
+      clearDungResults();
+      renderAll();
+    }
+
+    function saveDungAttack() {
+      const from = dom.dungAttackFrom.value;
+      const to = dom.dungAttackTo.value;
+      if (!from || !to) {
+        showToast("请先加入可选择的 Dung AF 节点。");
+        return;
+      }
+      dungState.attacks.push({ id: makeId("da"), from, to });
+      clearDungResults();
+      renderAll();
+      showToast("攻击关系已加入。");
+    }
+
+    function deleteDungAttack(id) {
+      dungState.attacks = dungState.attacks.filter(attack => attack.id !== id);
+      clearDungResults();
+      renderAll();
+    }
+
+    function clearDungResults() {
+      dungState.extensions = [];
+      dungState.selectedExtension = [];
+      dungState.selectedExtensionIndex = -1;
+      dungState.computed = false;
+      dungState.warning = "";
+    }
+
+    function autoLayoutDung() {
+      const n = dungState.nodes.length;
+      if (!n) return;
+      const radius = n <= 1 ? 0 : Math.min(300, 120 + n * 18);
+      dungState.nodes.forEach((node, index) => {
+        const angle = -Math.PI / 2 + index * Math.PI * 2 / n;
+        node.x = 500 + Math.cos(angle) * radius;
+        node.y = 350 + Math.sin(angle) * radius;
+      });
+      renderDungGraph();
+    }
+
+    function fitDungGraph() {
+      if (!dungState.nodes.length) return;
+      const xs = dungState.nodes.map(node => node.x);
+      const ys = dungState.nodes.map(node => node.y);
+      const dx = 500 - (Math.min(...xs) + Math.max(...xs)) / 2;
+      const dy = 350 - (Math.min(...ys) + Math.max(...ys)) / 2;
+      dungState.nodes.forEach(node => {
+        node.x = clamp(node.x + dx, 70, 930);
+        node.y = clamp(node.y + dy, 70, 630);
+      });
+      renderDungGraph();
+    }
+
+    function renderDungAll() {
+      dom.dungSemanticSelect.value = dungState.selectedSemantic;
+      renderDungSelects();
+      renderDungNodeRows();
+      renderDungAttackRows();
+      renderDungGraph();
+      renderDungResults();
+    }
+
+    function renderDungSelects() {
+      const selectedFrom = dom.dungAttackFrom.value;
+      const selectedTo = dom.dungAttackTo.value;
+      const options = dungState.nodes.map(node => `<option value="${escapeAttr(node.id)}">${escapeHtml(node.id)}</option>`).join("");
+      dom.dungAttackFrom.innerHTML = options;
+      dom.dungAttackTo.innerHTML = options;
+      if (dungState.nodes.some(node => node.id === selectedFrom)) dom.dungAttackFrom.value = selectedFrom;
+      if (dungState.nodes.some(node => node.id === selectedTo)) dom.dungAttackTo.value = selectedTo;
+      if (!dom.dungAttackFrom.value && dungState.nodes[0]) dom.dungAttackFrom.value = dungState.nodes[0].id;
+      if (!dom.dungAttackTo.value && dungState.nodes[1]) dom.dungAttackTo.value = dungState.nodes[1].id;
+    }
+
+    function renderDungNodeRows() {
+      if (!dungState.nodes.length) {
+        dom.dungNodeRows.innerHTML = `<tr><td colspan="3" class="empty">暂无节点</td></tr>`;
+        return;
+      }
+      dom.dungNodeRows.innerHTML = dungState.nodes.map(node => `
+        <tr class="${node.id === dungState.selectedNode ? "selected" : ""}">
+          <td><strong>${escapeHtml(node.id)}</strong></td>
+          <td>${escapeHtml(shortText(node.label || node.id, 14))}</td>
+          <td>
+            <div class="mini-actions">
+              <button title="载入节点" aria-label="载入 Dung AF 节点 ${escapeAttr(node.id)}" data-action="edit-dung-node" data-id="${escapeAttr(node.id)}"><i data-lucide="pencil"></i></button>
+              <button title="删除节点" aria-label="删除 Dung AF 节点 ${escapeAttr(node.id)}" data-action="delete-dung-node" data-id="${escapeAttr(node.id)}"><i data-lucide="trash-2"></i></button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDungAttackRows() {
+      if (!dungState.attacks.length) {
+        dom.dungAttackRows.innerHTML = `<tr><td colspan="2" class="empty">暂无攻击</td></tr>`;
+        return;
+      }
+      dom.dungAttackRows.innerHTML = dungState.attacks.map(attack => `
+        <tr>
+          <td><span class="pill attack">攻击</span><br><strong>${escapeHtml(attack.from)}</strong> → <strong>${escapeHtml(attack.to)}</strong></td>
+          <td>
+            <div class="mini-actions">
+              <button title="删除攻击" aria-label="删除攻击" data-action="delete-dung-attack" data-id="${escapeAttr(attack.id)}"><i data-lucide="trash-2"></i></button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDungGraph() {
+      dungEdgeLayer.replaceChildren();
+      dungNodeLayer.replaceChildren();
+      const pairIndex = new Map();
+      for (const attack of dungState.attacks) {
+        const source = getDungNode(attack.from);
+        const target = getDungNode(attack.to);
+        if (!source || !target) continue;
+        const pairKey = `${attack.from}->${attack.to}`;
+        const index = pairIndex.get(pairKey) || 0;
+        pairIndex.set(pairKey, index + 1);
+        drawDungAttack(attack, source, target, index);
+      }
+      for (const node of dungState.nodes) {
+        drawDungNode(node);
+      }
+    }
+
+    function drawDungAttack(attack, source, target, index = 0) {
+      const group = document.createElementNS(NS, "g");
+      const path = document.createElementNS(NS, "path");
+      const label = document.createElementNS(NS, "text");
+      const radius = 45;
+      let labelX;
+      let labelY;
+      path.setAttribute("class", "edge-path attack");
+      path.setAttribute("stroke", "#cf3f59");
+      path.setAttribute("marker-end", "url(#dungArrowAttack)");
+
+      if (source.id === target.id) {
+        const x = source.x;
+        const y = source.y;
+        path.setAttribute("d", `M ${x} ${y - radius} C ${x + 95} ${y - 150}, ${x + 155} ${y - 10}, ${x + 42} ${y - 10}`);
+        labelX = x + 92;
+        labelY = y - 82;
+      } else {
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const startX = source.x + ux * radius;
+        const startY = source.y + uy * radius;
+        const endX = target.x - ux * radius;
+        const endY = target.y - uy * radius;
+        const normalX = -uy;
+        const normalY = ux;
+        const curve = (index % 2 === 0 ? 1 : -1) * (18 + Math.floor(index / 2) * 18);
+        const ctrlX = (startX + endX) / 2 + normalX * curve;
+        const ctrlY = (startY + endY) / 2 + normalY * curve;
+        path.setAttribute("d", `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`);
+        labelX = ctrlX + normalX * 10;
+        labelY = ctrlY + normalY * 10;
+      }
+
+      label.setAttribute("x", labelX);
+      label.setAttribute("y", labelY);
+      label.setAttribute("class", "edge-label");
+      label.setAttribute("fill", "#cf3f59");
+      label.textContent = "−";
+      const title = document.createElementNS(NS, "title");
+      title.textContent = `${attack.from} 攻击 ${attack.to}`;
+      group.append(path, label, title);
+      dungEdgeLayer.appendChild(group);
+    }
+
+    function drawDungNode(node) {
+      const group = document.createElementNS(NS, "g");
+      const inExtension = dungState.selectedExtension.includes(node.id);
+      group.setAttribute("class", `node ${node.id === dungState.selectedNode ? "selected" : ""} ${inExtension ? "dung-node-in-extension" : ""}`);
+      group.setAttribute("transform", `translate(${node.x}, ${node.y})`);
+      group.setAttribute("tabindex", "0");
+      group.setAttribute("role", "button");
+      group.setAttribute("aria-label", `${node.id} Dung AF 节点`);
+      group.dataset.id = node.id;
+
+      const circle = document.createElementNS(NS, "circle");
+      circle.setAttribute("class", "main");
+      circle.setAttribute("r", "42");
+      circle.setAttribute("fill", inExtension ? "#bfe0ff" : "#e8eef6");
+
+      const ring = document.createElementNS(NS, "circle");
+      ring.setAttribute("class", "ring");
+      ring.setAttribute("r", "47");
+
+      const label = document.createElementNS(NS, "text");
+      label.setAttribute("class", "label-text");
+      label.setAttribute("y", "5");
+      label.textContent = shortText(node.label || node.id, 8);
+
+      const title = document.createElementNS(NS, "title");
+      title.textContent = `${node.id} | ${node.label || node.id}`;
+      group.append(circle, ring, label, title);
+      dungNodeLayer.appendChild(group);
+    }
+
+    function formatExtension(extension) {
+      return extension.length ? `{${extension.join(", ")}}` : "∅";
+    }
+
+    function renderDungResults() {
+      dom.dungWarningBox.textContent = dungState.warning;
+      dom.dungWarningBox.classList.toggle("show", Boolean(dungState.warning));
+      if (!dungState.extensions.length) {
+        dom.dungExtensionList.innerHTML = `<div class="empty">${dungState.computed ? "无扩展。" : "暂无扩展。点击“计算语义”。"}</div>`;
+      } else {
+        dom.dungExtensionList.innerHTML = dungState.extensions.map((extension, index) => `
+          <button class="extension-item ${index === dungState.selectedExtensionIndex ? "active" : ""}" data-index="${index}">
+            <i data-lucide="braces"></i>${escapeHtml(formatExtension(extension))}
+          </button>
+        `).join("");
+      }
+      renderDungSummary();
+    }
+
+    function renderDungSummary() {
+      if (dungState.selectedExtensionIndex < 0) {
+        dom.dungSummaryBox.innerHTML = `<span>${dungState.computed ? "当前语义下无扩展。" : "尚未选择扩展。"}</span>`;
+        return;
+      }
+      const extension = dungState.selectedExtension;
+      dom.dungSummaryBox.innerHTML = `
+        <span>扩展：<strong>${escapeHtml(formatExtension(extension))}</strong></span>
+        <span>节点数：<strong>${extension.length}</strong></span>
+        <span>conflict-free：<strong>${isDungConflictFree(new Set(extension)) ? "是" : "否"}</strong></span>
+        <span>stable：<strong>${isDungStable(new Set(extension)) ? "是" : "否"}</strong></span>
+      `;
+    }
+
+    function computeDungSemantics() {
+      dungState.selectedSemantic = dom.dungSemanticSelect.value;
+      const result = calculateDungExtensions(dungState.selectedSemantic);
+      dungState.extensions = result.extensions;
+      dungState.warning = result.warning;
+      dungState.computed = true;
+      dungState.selectedExtensionIndex = dungState.extensions.length ? 0 : -1;
+      dungState.selectedExtension = dungState.extensions[0] ? [...dungState.extensions[0]] : [];
+      setDungStatus(`已计算 <strong>${escapeHtml(dungState.selectedSemantic)}</strong> 语义，得到 <strong>${dungState.extensions.length}</strong> 个扩展。`);
+      renderAll();
+    }
+
+    function calculateDungExtensions(semantic) {
+      const ids = dungState.nodes.map(node => node.id);
+      if (ids.length > 14 && !["conflict-free", "admissible"].includes(semantic)) {
+        return {
+          extensions: [],
+          warning: "节点数超过 14。该语义需要完整穷举，请减少节点后再计算。"
+        };
+      }
+      const partial = ids.length > 14;
+      const subsets = generateSubsets(ids, partial ? 5000 : Infinity);
+      const warning = partial ? "节点数超过 14，仅显示前 5000 个候选子集中的结果，可能不完整。" : "";
+      const conflictFree = subsets.filter(extension => isDungConflictFree(new Set(extension)));
+      if (semantic === "conflict-free") return { extensions: sortExtensions(conflictFree), warning };
+      const admissible = conflictFree.filter(extension => isDungAdmissible(new Set(extension)));
+      if (semantic === "admissible") return { extensions: sortExtensions(admissible), warning };
+      if (semantic === "stable") return { extensions: sortExtensions(conflictFree.filter(extension => isDungStable(new Set(extension)))), warning };
+      const complete = admissible.filter(extension => isDungComplete(new Set(extension), ids));
+      if (semantic === "complete") return { extensions: sortExtensions(complete), warning };
+      if (semantic === "grounded") return { extensions: sortExtensions(minimalExtensions(complete)), warning };
+      if (semantic === "preferred") return { extensions: sortExtensions(maximalExtensions(admissible)), warning };
+      return { extensions: [], warning: "" };
+    }
+
+    function generateSubsets(ids, limit = Infinity) {
+      const subsets = [];
+      const total = 2 ** ids.length;
+      const capped = Math.min(total, limit);
+      for (let mask = 0; mask < capped; mask += 1) {
+        const subset = [];
+        ids.forEach((id, index) => {
+          if (Math.floor(mask / 2 ** index) % 2 === 1) subset.push(id);
+        });
+        subsets.push(subset);
+      }
+      return subsets;
+    }
+
+    function isDungConflictFree(set) {
+      return !dungState.attacks.some(attack => set.has(attack.from) && set.has(attack.to));
+    }
+
+    function attackersOf(id) {
+      return dungState.attacks.filter(attack => attack.to === id).map(attack => attack.from);
+    }
+
+    function attacksNode(set, targetId) {
+      return dungState.attacks.some(attack => set.has(attack.from) && attack.to === targetId);
+    }
+
+    function defendsDungNode(set, id) {
+      return attackersOf(id).every(attacker => attacksNode(set, attacker));
+    }
+
+    function isDungAdmissible(set) {
+      return isDungConflictFree(set) && [...set].every(id => defendsDungNode(set, id));
+    }
+
+    function isDungComplete(set, ids) {
+      if (!isDungAdmissible(set)) return false;
+      return ids.every(id => !defendsDungNode(set, id) || set.has(id));
+    }
+
+    function isDungStable(set) {
+      if (!isDungConflictFree(set)) return false;
+      return dungState.nodes.every(node => set.has(node.id) || attacksNode(set, node.id));
+    }
+
+    function isSubset(a, b) {
+      return a.every(item => b.includes(item));
+    }
+
+    function maximalExtensions(extensions) {
+      return extensions.filter(extension => !extensions.some(other => extension !== other && isSubset(extension, other) && extension.length < other.length));
+    }
+
+    function minimalExtensions(extensions) {
+      return extensions.filter(extension => !extensions.some(other => extension !== other && isSubset(other, extension) && other.length < extension.length));
+    }
+
+    function sortExtensions(extensions) {
+      return [...extensions].map(extension => [...extension].sort()).sort((a, b) => a.length - b.length || a.join(",").localeCompare(b.join(",")));
+    }
+
+    async function importDungFile() {
+      const file = dom.dungFileInput.files[0];
+      if (!file) {
+        showToast("请选择 Dung AF 的 Excel 或 CSV 文件。");
+        return;
+      }
+      try {
+        if (dom.dungImportMode.value === "replace") {
+          dungState.nodes = [];
+          dungState.attacks = [];
+          dungState.selectedNode = null;
+        }
+        let result;
+        if (file.name.toLowerCase().endsWith(".csv")) {
+          result = importDungRows(parseCsv(await file.text()));
+        } else {
+          if (!window.XLSX) throw new Error("XLSX 库未加载。请先导入 CSV。");
+          const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+          result = importDungWorkbook(workbook);
+        }
+        if (dungState.nodes.length && !dungState.selectedNode) dungState.selectedNode = dungState.nodes[0].id;
+        clearDungResults();
+        renderAll();
+        setDungStatus(`导入完成：<strong>${result.nodes}</strong> 个节点，<strong>${result.attacks}</strong> 条攻击。`);
+      } catch (error) {
+        setDungStatus(`<strong>导入失败：</strong>${escapeHtml(error.message || "文件格式无法识别。")}`);
+      }
+    }
+
+    function importDungWorkbook(workbook) {
+      const nodeSheet = findSheetName(workbook.SheetNames, ["nodes", "node", "节点", "论点"]);
+      const attackSheet = findSheetName(workbook.SheetNames, ["attacks", "attack", "edges", "edge", "攻击", "关系"]);
+      const nodeRows = nodeSheet ? sheetRows(workbook.Sheets[nodeSheet]) : sheetRows(workbook.Sheets[workbook.SheetNames[0]]);
+      const attackRows = attackSheet ? sheetRows(workbook.Sheets[attackSheet]) : (workbook.SheetNames[1] ? sheetRows(workbook.Sheets[workbook.SheetNames[1]]) : []);
+      return { nodes: importDungNodes(nodeRows), attacks: importDungAttacks(attackRows) };
+    }
+
+    function importDungRows(rows) {
+      const nodeRows = rows.filter(row => readCell(row, ["id", "node", "nodeid", "节点", "节点id", "argument", "argumentid"]) !== "");
+      const attackRows = rows.filter(row => readCell(row, ["from", "source", "src", "来源", "起点", "攻击者"]) !== "" &&
+        readCell(row, ["to", "target", "dst", "目标", "终点", "被攻击者"]) !== "");
+      return { nodes: importDungNodes(nodeRows), attacks: importDungAttacks(attackRows) };
+    }
+
+    function importDungNodes(rows) {
+      let count = 0;
+      for (const row of rows) {
+        const id = String(readCell(row, ["id", "node", "nodeid", "节点", "节点id", "argument", "argumentid"])).trim();
+        if (!id) continue;
+        const label = String(readCell(row, ["label", "name", "title", "名称", "标签", "显示名称", "论点"]) || id).trim();
+        const xRaw = Number(readCell(row, ["x", "posx", "横坐标"]));
+        const yRaw = Number(readCell(row, ["y", "posy", "纵坐标"]));
+        const existing = getDungNode(id);
+        if (existing) {
+          existing.label = label;
+          if (Number.isFinite(xRaw)) existing.x = clamp(xRaw, 50, 950);
+          if (Number.isFinite(yRaw)) existing.y = clamp(yRaw, 50, 650);
+        } else {
+          const pos = nextPosition(dungState.nodes.length);
+          dungState.nodes.push({
+            id,
+            label,
+            x: Number.isFinite(xRaw) ? clamp(xRaw, 50, 950) : pos.x,
+            y: Number.isFinite(yRaw) ? clamp(yRaw, 50, 650) : pos.y
+          });
+          count += 1;
+        }
+      }
+      return count;
+    }
+
+    function importDungAttacks(rows) {
+      let count = 0;
+      for (const row of rows) {
+        const from = String(readCell(row, ["from", "source", "src", "fromid", "sourceid", "来源", "起点", "攻击者"])).trim();
+        const to = String(readCell(row, ["to", "target", "dst", "toid", "targetid", "目标", "终点", "被攻击者"])).trim();
+        if (!from || !to) continue;
+        ensureDungNode(from);
+        ensureDungNode(to);
+        dungState.attacks.push({ id: makeId("da"), from, to });
+        count += 1;
+      }
+      return count;
+    }
+
+    function ensureDungNode(id) {
+      if (getDungNode(id)) return;
+      const pos = nextPosition(dungState.nodes.length);
+      dungState.nodes.push({ id, label: id, x: pos.x, y: pos.y });
+    }
+
+    function downloadDungTemplate() {
+      if (!window.XLSX) {
+        showToast("模板下载需要 XLSX 库。");
+        return;
+      }
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+        { id: "A", label: "论证 A", x: 220, y: 210 },
+        { id: "B", label: "论证 B", x: 500, y: 180 }
+      ]), "Nodes");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+        { from: "A", to: "B" }
+      ]), "Attacks");
+      XLSX.writeFile(wb, "Dung_AF_template.xlsx");
+    }
+
+    function exportDungData() {
+      const nodes = dungState.nodes.map(({ id, label, x, y }) => ({ id, label, x: Math.round(x), y: Math.round(y) }));
+      const attacks = dungState.attacks.map(({ from, to }) => ({ from, to }));
+      if (window.XLSX) {
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(nodes), "Nodes");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attacks), "Attacks");
+        XLSX.writeFile(wb, "Dung_AF_current.xlsx");
+      } else {
+        downloadBlob(new Blob([JSON.stringify({ nodes, attacks }, null, 2)], { type: "application/json" }), "Dung_AF_current.json");
+      }
+    }
+
     function downloadBlob(blob, filename) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1770,11 +2631,11 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       return escapeHtml(value);
     }
 
-    function svgPointFromEvent(event) {
-      const point = graphSvg.createSVGPoint();
+    function svgPointFromEvent(event, svg = graphSvg) {
+      const point = svg.createSVGPoint();
       point.x = event.clientX;
       point.y = event.clientY;
-      return point.matrixTransform(graphSvg.getScreenCTM().inverse());
+      return point.matrixTransform(svg.getScreenCTM().inverse());
     }
 
     function createIcons() {
@@ -1782,6 +2643,9 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
         window.lucide.createIcons();
       }
     }
+
+    dom.qbafTab.addEventListener("click", () => setTool("qbaf"));
+    dom.dungTab.addEventListener("click", () => setTool("dung"));
 
     dom.saveNodeBtn.addEventListener("click", saveNode);
     dom.resetNodeFormBtn.addEventListener("click", () => fillNodeForm(null));
@@ -1820,6 +2684,37 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       setStatus(`已暂停在第 <strong>${state.iteration}</strong> 轮。`);
     });
 
+    dom.dungSaveNodeBtn.addEventListener("click", saveDungNode);
+    dom.dungResetNodeFormBtn.addEventListener("click", () => fillDungNodeForm(null));
+    dom.dungSaveAttackBtn.addEventListener("click", saveDungAttack);
+    dom.dungImportBtn.addEventListener("click", importDungFile);
+    dom.dungTemplateBtn.addEventListener("click", downloadDungTemplate);
+    dom.dungExportBtn.addEventListener("click", exportDungData);
+    dom.dungLayoutBtn.addEventListener("click", autoLayoutDung);
+    dom.dungFitBtn.addEventListener("click", fitDungGraph);
+    dom.dungComputeBtn.addEventListener("click", computeDungSemantics);
+    dom.dungComputeMainBtn.addEventListener("click", computeDungSemantics);
+    dom.dungClearSelectionBtn.addEventListener("click", () => {
+      dungState.selectedExtension = [];
+      dungState.selectedExtensionIndex = -1;
+      renderAll();
+    });
+    dom.dungClearAllBtn.addEventListener("click", () => {
+      dungState.nodes = [];
+      dungState.attacks = [];
+      dungState.selectedNode = null;
+      clearDungResults();
+      fillDungNodeForm(null);
+      renderAll();
+      setDungStatus("Dung AF 框架已清空。");
+    });
+    dom.dungSemanticSelect.addEventListener("change", () => {
+      dungState.selectedSemantic = dom.dungSemanticSelect.value;
+      clearDungResults();
+      renderAll();
+      setDungStatus(`已选择 <strong>${escapeHtml(dungState.selectedSemantic)}</strong> 语义，点击“计算语义”查看扩展。`);
+    });
+
     dom.nodeRows.addEventListener("click", event => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
@@ -1838,6 +2733,37 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       if (button) deleteEdge(button.dataset.id);
     });
 
+    dom.dungNodeRows.addEventListener("click", event => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const id = button.dataset.id;
+      if (button.dataset.action === "edit-dung-node") {
+        const node = getDungNode(id);
+        if (!node) return;
+        dungState.selectedNode = id;
+        fillDungNodeForm(node);
+        renderAll();
+      } else if (button.dataset.action === "delete-dung-node") {
+        deleteDungNode(id);
+      }
+    });
+
+    dom.dungAttackRows.addEventListener("click", event => {
+      const button = event.target.closest("button[data-action='delete-dung-attack']");
+      if (button) deleteDungAttack(button.dataset.id);
+    });
+
+    dom.dungExtensionList.addEventListener("click", event => {
+      const button = event.target.closest("button[data-index]");
+      if (!button) return;
+      const index = Number(button.dataset.index);
+      const extension = dungState.extensions[index];
+      if (!extension) return;
+      dungState.selectedExtensionIndex = index;
+      dungState.selectedExtension = [...extension];
+      renderAll();
+    });
+
     nodeLayer.addEventListener("pointerdown", event => {
       const group = event.target.closest(".node");
       if (!group) return;
@@ -1850,19 +2776,43 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       renderAll();
     });
 
-    window.addEventListener("pointermove", event => {
-      if (!state.drag) return;
-      const node = getNode(state.drag.id);
+    dungNodeLayer.addEventListener("pointerdown", event => {
+      const group = event.target.closest(".node");
+      if (!group) return;
+      const node = getDungNode(group.dataset.id);
       if (!node) return;
-      const point = svgPointFromEvent(event);
-      node.x = clamp(point.x - state.drag.dx, 50, 950);
-      node.y = clamp(point.y - state.drag.dy, 50, 650);
-      state.drag.moved = true;
-      renderGraph();
+      const point = svgPointFromEvent(event, dungGraphSvg);
+      dungState.drag = { id: node.id, dx: point.x - node.x, dy: point.y - node.y, moved: false };
+      dungState.selectedNode = node.id;
+      fillDungNodeForm(node);
+      renderAll();
+    });
+
+    window.addEventListener("pointermove", event => {
+      if (state.drag) {
+        const node = getNode(state.drag.id);
+        if (!node) return;
+        const point = svgPointFromEvent(event);
+        node.x = clamp(point.x - state.drag.dx, 50, 950);
+        node.y = clamp(point.y - state.drag.dy, 50, 650);
+        state.drag.moved = true;
+        renderGraph();
+        return;
+      }
+      if (dungState.drag) {
+        const node = getDungNode(dungState.drag.id);
+        if (!node) return;
+        const point = svgPointFromEvent(event, dungGraphSvg);
+        node.x = clamp(point.x - dungState.drag.dx, 50, 950);
+        node.y = clamp(point.y - dungState.drag.dy, 50, 650);
+        dungState.drag.moved = true;
+        renderDungGraph();
+      }
     });
 
     window.addEventListener("pointerup", () => {
       state.drag = null;
+      dungState.drag = null;
     });
 
     graphSvg.addEventListener("click", event => {
@@ -1885,6 +2835,27 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
       renderAll();
     });
 
+    dungGraphSvg.addEventListener("click", event => {
+      const group = event.target.closest(".node");
+      if (!group) return;
+      const node = getDungNode(group.dataset.id);
+      if (!node) return;
+      dungState.selectedNode = node.id;
+      fillDungNodeForm(node);
+      renderAll();
+    });
+
+    dungGraphSvg.addEventListener("keydown", event => {
+      const group = event.target.closest(".node");
+      if (!group || (event.key !== "Enter" && event.key !== " ")) return;
+      event.preventDefault();
+      const node = getDungNode(group.dataset.id);
+      if (!node) return;
+      dungState.selectedNode = node.id;
+      fillDungNodeForm(node);
+      renderAll();
+    });
+
     [dom.epsilon, dom.maxIterations, dom.stepSize, dom.runDelay].forEach(input => {
       input.addEventListener("change", () => {
         dom.stepSize.value = round4(clamp(dom.stepSize.value, 0.01, 1));
@@ -1893,6 +2864,7 @@ s_a(t+1) = s_a(t) + η * (F_a - s_a(t))
     });
 
     fillNodeForm(getNode(state.selectedNode));
+    fillDungNodeForm(getDungNode(dungState.selectedNode));
     recordInitialHistory();
     renderAll();
   </script>
