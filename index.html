@@ -229,6 +229,14 @@
       min-height: 660px;
     }
 
+    .app-shell.tool-view {
+      display: none;
+    }
+
+    .app-shell.tool-view.active {
+      display: grid;
+    }
+
     .panel {
       min-height: 0;
       background: var(--surface);
@@ -648,7 +656,14 @@
     }
 
     .dung-node-in-extension circle.main {
-      stroke: var(--accent);
+      fill: #bfead2;
+      stroke: var(--support);
+      stroke-width: 4;
+    }
+
+    .dung-node-out-extension circle.main {
+      fill: #ffd2d9;
+      stroke: rgba(207, 63, 89, .72);
       stroke-width: 4;
     }
 
@@ -766,7 +781,7 @@
         padding: 10px;
       }
 
-      .tool-view.active {
+      .app-shell.tool-view.active {
         display: flex;
       }
 
@@ -2332,7 +2347,9 @@ stable: conflict-free 且攻击集合外所有节点。</pre>
     function drawDungNode(node) {
       const group = document.createElementNS(NS, "g");
       const inExtension = dungState.selectedExtension.includes(node.id);
-      group.setAttribute("class", `node ${node.id === dungState.selectedNode ? "selected" : ""} ${inExtension ? "dung-node-in-extension" : ""}`);
+      const hasSelectedExtension = dungState.selectedExtensionIndex >= 0;
+      const outExtension = hasSelectedExtension && !inExtension;
+      group.setAttribute("class", `node ${node.id === dungState.selectedNode ? "selected" : ""} ${inExtension ? "dung-node-in-extension" : ""} ${outExtension ? "dung-node-out-extension" : ""}`);
       group.setAttribute("transform", `translate(${node.x}, ${node.y})`);
       group.setAttribute("tabindex", "0");
       group.setAttribute("role", "button");
@@ -2342,7 +2359,7 @@ stable: conflict-free 且攻击集合外所有节点。</pre>
       const circle = document.createElementNS(NS, "circle");
       circle.setAttribute("class", "main");
       circle.setAttribute("r", "42");
-      circle.setAttribute("fill", inExtension ? "#bfe0ff" : "#e8eef6");
+      circle.setAttribute("fill", inExtension ? "#bfead2" : outExtension ? "#ffd2d9" : "#e8eef6");
 
       const ring = document.createElementNS(NS, "circle");
       ring.setAttribute("class", "ring");
